@@ -114,8 +114,8 @@ export class PeopleService {
 
         if (match) {
           throw new Error(
-            `Este rosto já está cadastrado no sistema como "${match.name}". ` +
-            `Não é permitido cadastrar a mesma pessoa duas vezes.`
+            `Já existe uma pessoa cadastrada com este rosto: "${match.name}". ` +
+            `Se for você, use o cadastro existente ou procure o responsável pelo sistema.`
           );
         }
       }
@@ -226,7 +226,8 @@ export class PeopleService {
         }
         if (minDist < DUPLICATE_THRESHOLD) {
           throw new Error(
-            `Este rosto já está cadastrado no sistema como "${p.name}" (distância=${minDist.toFixed(2)}). Não é permitido cadastrar a mesma pessoa duas vezes.`,
+            `Já existe uma pessoa cadastrada com este rosto: "${p.name}". ` +
+            `Se for você, use o cadastro existente ou procure o responsável pelo sistema.`,
           );
         }
       }

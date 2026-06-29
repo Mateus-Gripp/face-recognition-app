@@ -12,15 +12,17 @@ export interface CapturedFrame {
 interface Props {
   onComplete: (frames: CapturedFrame[]) => void
   onClose: () => void
+  mode?: 'register' | 'identify'
 }
 
 type Phase = 'loading' | 'ready' | 'capturing' | 'analyzing' | 'done' | 'failed'
 
-const CAPTURE_MS = 5000
+const CAPTURE_MS = 12000
 const MIN_FRAMES_REQUIRED = 15
 const MIN_VALID_FRACTION = 0.6
 const MIN_YAW_RANGE_DEG = 1.5
 const MAX_YAW_RANGE_DEG = 18
+const TURN_TARGET_YAW_DEG = 8
 
 interface CollectedFrame {
   t: number
@@ -30,7 +32,34 @@ interface CollectedFrame {
   blob: Blob
 }
 
-export const LivenessCapture = ({ onComplete, onClose }: Props) => {
+const cropFaceBlob = async (
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  box: NonNullable<FrameAnalysis['box']>,
+): Promise<Blob | null> => {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  const sourceWidth = video.videoWidth
+  const sourceHeight = video.videoHeight
+
+  const marginX = box.width * 0.35
+  const marginTop = box.height * 0.45
+  const marginBottom = box.height * 0.3
+
+  const sx = Math.max(0, Math.floor(box.x - marginX))
+  const sy = Math.max(0, Math.floor(box.y - marginTop))
+  const sw = Math.min(sourceWidth - sx, Math.ceil(box.width + marginX * 2))
+  const sh = Math.min(sourceHeight - sy, Math.ceil(box.height + marginTop + marginBottom))
+
+  canvas.width = sw
+  canvas.height = sh
+  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
+
+  return new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.94))
+}
+
+export const LivenessCapture = ({ onComplete, onClose, mode = 'register' }: Props) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -38,14 +67,22 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
   const startTsRef = useRef<number>(0)
   const collectedRef = useRef<CollectedFrame[]>([])
   const totalAnalyzedRef = useRef<number>(0)
+  const faceDetectedRef = useRef<number>(0)
   const phaseRef = useRef<Phase>('loading')
+  const sawLeftRef = useRef<boolean>(false)
+  const sawRightRef = useRef<boolean>(false)
 
   const [phase, setPhase] = useState<Phase>('loading')
   const [statusText, setStatusText] = useState('Carregando modelos…')
   const [progress, setProgress] = useState({
     timeLeftMs: CAPTURE_MS,
     framesCollected: 0,
+    faceFrames: 0,
     facePresent: false,
+    yaw: 0,
+    leftDone: false,
+    rightDone: false,
+    headState: 'centralizado',
   })
   const [failureReason, setFailureReason] = useState<string | null>(null)
 
@@ -71,7 +108,11 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
           videoRef.current.srcObject = stream
           await videoRef.current.play()
           setPhase('ready')
-          setStatusText('Pronto. Quando clicar em "Iniciar", olhe pra câmera e mantenha o rosto centralizado.')
+          setStatusText(
+            mode === 'identify'
+              ? 'Pronto. Quando clicar em "Iniciar", valide sua prova de vida olhando para a câmera.'
+              : 'Pronto. Quando clicar em "Iniciar", olhe pra câmera e mantenha o rosto centralizado.'
+          )
         }
       } catch (err) {
         console.error('[liveness] init error', err)
@@ -88,10 +129,14 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const grabFrameBlob = async (): Promise<Blob | null> => {
+  const grabFrameBlob = async (analysis: FrameAnalysis): Promise<Blob | null> => {
     if (!videoRef.current || !canvasRef.current) return null
     const video = videoRef.current
     const canvas = canvasRef.current
+    if (analysis.box) {
+      return cropFaceBlob(video, canvas, analysis.box)
+    }
+
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     canvas.getContext('2d')!.drawImage(video, 0, 0)
@@ -101,9 +146,21 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
   const startCapture = () => {
     collectedRef.current = []
     totalAnalyzedRef.current = 0
+    faceDetectedRef.current = 0
+    sawLeftRef.current = false
+    sawRightRef.current = false
     setFailureReason(null)
-    setProgress({ timeLeftMs: CAPTURE_MS, framesCollected: 0, facePresent: false })
-    setStatusText('Olhe pra câmera e mantenha o rosto centralizado')
+    setProgress({
+      timeLeftMs: CAPTURE_MS,
+      framesCollected: 0,
+      faceFrames: 0,
+      facePresent: false,
+      yaw: 0,
+      leftDone: false,
+      rightDone: false,
+      headState: 'centralizado',
+    })
+    setStatusText('Olhe pra câmera, vire a cabeça para a esquerda e para a direita, e volte ao centro')
     startTsRef.current = performance.now()
     setPhase('capturing')
     captureLoop()
@@ -120,6 +177,31 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
       const elapsed = performance.now() - startTsRef.current
       const a: FrameAnalysis = await analyzeFrame(videoRef.current)
       totalAnalyzedRef.current++
+      if (a.hasFace) {
+        faceDetectedRef.current++
+      }
+
+      let headState = 'sem rosto'
+
+      if (a.hasFace) {
+        if (a.yaw <= -TURN_TARGET_YAW_DEG) {
+          sawLeftRef.current = true
+          headState = 'virado para a esquerda'
+        } else if (a.yaw >= TURN_TARGET_YAW_DEG) {
+          sawRightRef.current = true
+          headState = 'virado para a direita'
+        } else {
+          headState = 'centralizado'
+        }
+
+        if (sawLeftRef.current && sawRightRef.current) {
+          setStatusText('Movimentos validados. Volte ao centro e mantenha o rosto estável até finalizar.')
+        } else if (sawLeftRef.current) {
+          setStatusText('Esquerda validada. Agora vire a cabeça para a direita.')
+        } else if (sawRightRef.current) {
+          setStatusText('Direita validada. Agora vire a cabeça para a esquerda.')
+        }
+      }
 
       if (a.hasFace) {
         if (
@@ -127,7 +209,7 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
           a.descriptor &&
           a.faceSize > 80
         ) {
-          const blob = await grabFrameBlob()
+          const blob = await grabFrameBlob(a)
           if (blob) {
             collectedRef.current.push({ t: elapsed, yaw: a.yaw, ear: a.ear, descriptor: a.descriptor, blob })
           }
@@ -137,7 +219,12 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
       setProgress({
         timeLeftMs: Math.max(0, CAPTURE_MS - elapsed),
         framesCollected: collectedRef.current.length,
+        faceFrames: faceDetectedRef.current,
         facePresent: a.hasFace,
+        yaw: a.yaw,
+        leftDone: sawLeftRef.current,
+        rightDone: sawRightRef.current,
+        headState,
       })
 
       if (elapsed >= CAPTURE_MS) {
@@ -154,13 +241,18 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
   const finalizeCapture = async () => {
     const collected = collectedRef.current
     const total = totalAnalyzedRef.current
+    const faceFrames = faceDetectedRef.current
 
     if (collected.length < MIN_FRAMES_REQUIRED) {
       fail(`Poucos frames válidos (${collected.length}). Mantenha o rosto centralizado na câmera.`)
       return
     }
-    if (collected.length / Math.max(1, total) < MIN_VALID_FRACTION) {
-      fail(`Rosto saiu do quadro com frequência (${collected.length}/${total} frames válidos).`)
+    if (faceFrames / Math.max(1, total) < MIN_VALID_FRACTION) {
+      fail(`Rosto saiu do quadro com frequência (${faceFrames}/${total} frames com rosto detectado).`)
+      return
+    }
+    if (!sawLeftRef.current || !sawRightRef.current) {
+      fail('Nao detectamos os movimentos completos de esquerda e direita. Vire a cabeça para os dois lados e volte ao centro.')
       return
     }
     const yaws = collected.map((c) => c.yaw)
@@ -169,7 +261,7 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
       fail(`Sem variação natural de pose (range=${yawRange.toFixed(1)}°). Suspeita de foto estática.`)
       return
     }
-    if (yawRange > MAX_YAW_RANGE_DEG) {
+    if ((!sawLeftRef.current || !sawRightRef.current) && yawRange > MAX_YAW_RANGE_DEG) {
       fail(`Você se moveu muito (range=${yawRange.toFixed(1)}°). Mantenha o rosto centralizado.`)
       return
     }
@@ -229,7 +321,20 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
   const tryAgain = () => {
     setFailureReason(null)
     setPhase('ready')
-    setStatusText('Pronto. Quando clicar em "Iniciar", olhe pra câmera e mantenha o rosto centralizado.')
+    setStatusText(
+      mode === 'identify'
+        ? 'Pronto. Quando clicar em "Iniciar", valide sua prova de vida olhando para a câmera.'
+        : 'Pronto. Quando clicar em "Iniciar", olhe pra câmera e mantenha o rosto centralizado.'
+    )
+    setProgress((prev) => ({
+      ...prev,
+      framesCollected: 0,
+      faceFrames: 0,
+      yaw: 0,
+      leftDone: false,
+      rightDone: false,
+      headState: 'centralizado',
+    }))
   }
 
   return (
@@ -264,6 +369,56 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
         <div
           style={{
             position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 12,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.38)',
+            }}
+          />
+          <div
+            style={{
+              position: 'relative',
+              width: '52%',
+              aspectRatio: '0.82 / 1',
+              borderRadius: '999px',
+              border: `3px solid ${progress.facePresent ? '#22c55e' : 'rgba(255,255,255,0.7)'}`,
+              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.34)',
+              background: 'transparent',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              padding: '8px 14px',
+              borderRadius: 999,
+              background: 'rgba(15, 23, 42, 0.82)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 600,
+              textAlign: 'center',
+              maxWidth: '80%',
+            }}
+          >
+            Posicione o rosto dentro do oval e mantenha-o centralizado
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: 'absolute',
             top: 12,
             left: 12,
             right: 12,
@@ -276,8 +431,13 @@ export const LivenessCapture = ({ onComplete, onClose }: Props) => {
           <Chip ok={progress.facePresent} label={progress.facePresent ? 'rosto ✓' : 'sem rosto'} />
           <Chip
             ok={progress.framesCollected >= MIN_FRAMES_REQUIRED}
-            label={`${progress.framesCollected} frames`}
+            label={`${progress.framesCollected} frames centrais`}
           />
+          <Chip ok={progress.faceFrames >= MIN_FRAMES_REQUIRED} label={`${progress.faceFrames} frames com rosto`} />
+          <Chip ok={progress.leftDone} label={progress.leftDone ? 'esquerda ✓' : 'esquerda'} />
+          <Chip ok={progress.rightDone} label={progress.rightDone ? 'direita ✓' : 'direita'} />
+          <Chip ok={Math.abs(progress.yaw) >= TURN_TARGET_YAW_DEG} label={`yaw ${progress.yaw.toFixed(1)}°`} />
+          <Chip ok={progress.headState !== 'sem rosto'} label={progress.headState} />
           {phase === 'capturing' && (
             <Chip ok={false} label={`${(progress.timeLeftMs / 1000).toFixed(1)}s`} />
           )}

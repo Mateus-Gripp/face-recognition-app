@@ -6,6 +6,12 @@ export interface FrameAnalysis {
   ear: number
   descriptor: Float32Array | null
   faceSize: number
+  box: {
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null
 }
 
 const dist = (a: faceapi.Point, b: faceapi.Point) => Math.hypot(a.x - b.x, a.y - b.y)
@@ -46,7 +52,7 @@ export async function analyzeFrame(
     .withFaceDescriptor()
 
   if (!detection) {
-    return { hasFace: false, yaw: 0, ear: 0, descriptor: null, faceSize: 0 }
+    return { hasFace: false, yaw: 0, ear: 0, descriptor: null, faceSize: 0, box: null }
   }
 
   return {
@@ -55,6 +61,12 @@ export async function analyzeFrame(
     ear: computeEAR(detection.landmarks),
     descriptor: detection.descriptor,
     faceSize: faceSize(detection.landmarks),
+    box: {
+      x: detection.detection.box.x,
+      y: detection.detection.box.y,
+      width: detection.detection.box.width,
+      height: detection.detection.box.height,
+    },
   }
 }
 

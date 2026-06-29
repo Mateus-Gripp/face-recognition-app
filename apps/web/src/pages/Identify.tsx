@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { peopleApi } from '../services/api';
-import { FaceCapture } from '../components/FaceCapture';
+import { LivenessCapture, type CapturedFrame } from '../components/LivenessCapture';
 import type { IdentifyResult } from '../types';
 
 export const Identify = () => {
@@ -58,10 +58,17 @@ export const Identify = () => {
     setShowCamera(true);
   };
 
-  const handleCapture = (blob: Blob) => {
-    const imageUrl = URL.createObjectURL(blob);
+  const handleCapture = (frames: CapturedFrame[]) => {
+    const preferredFrame = frames[Math.floor(frames.length / 2)] ?? frames[0];
+    if (!preferredFrame) {
+      setError('Nao foi possivel capturar um frame valido para identificacao.');
+      setShowCamera(false);
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(preferredFrame.blob);
     setCapturedImage(imageUrl);
-    setCapturedBlob(blob);
+    setCapturedBlob(preferredFrame.blob);
     setShowCamera(false);
   };
 
@@ -108,9 +115,10 @@ export const Identify = () => {
     <>
       {/* Modal de Captura de Foto */}
       {showCamera && (
-        <FaceCapture
-          onCapture={handleCapture}
+        <LivenessCapture
+          onComplete={handleCapture}
           onClose={() => setShowCamera(false)}
+          mode="identify"
         />
       )}
 
@@ -119,7 +127,7 @@ export const Identify = () => {
           <div className="page-header">
             <h1 className="page-title">Identificar Pessoa</h1>
             <p className="page-subtitle">
-              Use o reconhecimento facial para identificar uma pessoa cadastrada
+              Use o reconhecimento facial com prova de vida para identificar uma pessoa cadastrada
             </p>
           </div>
 
@@ -136,14 +144,14 @@ export const Identify = () => {
                 {!capturedImage && (
                   <div>
                     <p style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
-                      Clique no botão abaixo para capturar sua foto
+                      Clique no botao abaixo para validar sua prova de vida e capturar a foto
                     </p>
                     <button
                       type="button"
                       className="btn btn-primary btn-lg btn-block"
                       onClick={handleOpenCamera}
                     >
-                      📸 Capturar Foto Facial
+                      📸 Iniciar Captura com Prova de Vida
                     </button>
                   </div>
                 )}
