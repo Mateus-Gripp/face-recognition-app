@@ -10,8 +10,6 @@ export interface IdentifyResult {
   id: string;
   name: string;
   externalId: string;
-  confidence: number;
-  similarity: number;
   imagePath: string;
 }
 

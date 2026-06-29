@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { peopleApi } from '../services/api';
 import { FaceCapture } from '../components/FaceCapture';
 import type { IdentifyResult } from '../types';
@@ -11,9 +11,48 @@ export const Identify = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
 
-  const handleOpenCamera = () => {
+  useEffect(() => {
+    return () => {
+      if (capturedImage) {
+        URL.revokeObjectURL(capturedImage);
+      }
+    };
+  }, [capturedImage]);
+
+  const resetCapturedState = () => {
+    if (capturedImage) {
+      URL.revokeObjectURL(capturedImage);
+    }
     setCapturedImage(null);
     setCapturedBlob(null);
+  };
+
+  const getStoredImageUrl = (imagePath: string) => {
+    const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+
+    const normalizedPath = imagePath.replace(/\\/g, '/');
+    const fileName = normalizedPath.split('/').pop();
+
+    if (!fileName) {
+      return '/uploads';
+    }
+
+    const uploadsPath = `/uploads/${fileName}`;
+
+    if (apiBaseUrl.startsWith('http://') || apiBaseUrl.startsWith('https://')) {
+      const apiOrigin = new URL(apiBaseUrl).origin;
+      return `${apiOrigin}${uploadsPath}`;
+    }
+
+    return uploadsPath;
+  };
+
+  const handleOpenCamera = () => {
+    resetCapturedState();
     setError(null);
     setResult(null);
     setShowCamera(true);
@@ -27,8 +66,7 @@ export const Identify = () => {
   };
 
   const handleRetake = () => {
-    setCapturedImage(null);
-    setCapturedBlob(null);
+    resetCapturedState();
     setResult(null);
     setShowCamera(true);
   };
@@ -64,12 +102,6 @@ export const Identify = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return 'var(--success)';
-    if (confidence >= 60) return 'var(--warning)';
-    return 'var(--error)';
   };
 
   return (
@@ -157,34 +189,48 @@ export const Identify = () => {
                 ✓ Pessoa Identificada!
               </h2>
 
-              {result.imagePath && (
-                <img
-                  src={`http://localhost:5000/${result.imagePath}`}
-                  alt={result.name}
-                  className="result-avatar"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              )}
+              <div className="comparison-grid">
+                <div className="comparison-card">
+                  <div className="comparison-label">Foto tirada agora</div>
+                  {capturedImage ? (
+                    <img
+                      src={capturedImage}
+                      alt="Foto capturada"
+                      className="comparison-image"
+                    />
+                  ) : (
+                    <div className="comparison-image comparison-image-fallback">
+                      Foto indisponível
+                    </div>
+                  )}
+                </div>
+
+                <div className="comparison-card">
+                  <div className="comparison-label">Foto cadastrada no banco</div>
+                  {result.imagePath ? (
+                    <img
+                      src={getStoredImageUrl(result.imagePath)}
+                      alt={result.name}
+                      className="comparison-image"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="comparison-image comparison-image-fallback">
+                      Foto indisponível
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="result-name">{result.name}</div>
               <div style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 ID: {result.externalId}
               </div>
 
-              <div
-                className="result-confidence"
-                style={{ color: getConfidenceColor(result.confidence) }}
-              >
-                {result.confidence}% de confiança
-              </div>
-
-              <div className="confidence-bar">
-                <div
-                  className="confidence-fill"
-                  style={{ width: `${result.confidence}%` }}
-                />
+              <div className="result-decision result-decision-match">
+                Resultado: e a pessoa cadastrada
               </div>
 
               <div style={{ marginTop: '2rem' }}>
@@ -193,8 +239,7 @@ export const Identify = () => {
                   className="btn btn-primary btn-lg"
                   onClick={() => {
                     setResult(null);
-                    setCapturedImage(null);
-                    setCapturedBlob(null);
+                    resetCapturedState();
                     setError(null);
                   }}
                 >
