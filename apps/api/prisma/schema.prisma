@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id                String           @id @default(uuid())
+  name              String
+  externalId        String           @unique
+  imagePath         String
+  documentPath     String?
+  faceDescriptor    String           // legado: primeiro descriptor (mantido p/ compat)
+  livenessValidated Boolean          @default(false)
+  faceDescriptors   FaceDescriptor[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@map("people")
+}
+
+model FaceDescriptor {
+  id         String   @id @default(uuid())
+  personId   String
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  descriptor String   // JSON do vetor de 128 floats
+  angle      String   // "front" | "left" | "right" | "smile" | "neutral"
+  createdAt  DateTime @default(now())
+
+  @@index([personId])
+  @@map("face_descriptors")
+}

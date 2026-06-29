@@ -1,0 +1,28 @@
+{
+  "name": "face-recognition-app",
+  "version": "1.0.0",
+  "description": "Sistema de reconhecimento facial com React e Node.js",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:web\"",
+    "predev": "pnpm kill",
+    "kill": "bash scripts/kill.sh",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm --filter api build && pnpm --filter web build",
+    "prisma:migrate": "pnpm --filter api prisma:migrate",
+    "db:backup": "cp apps/api/prisma/dev.db apps/api/prisma/dev.db.backup-$(date +%Y%m%d-%H%M%S) && echo 'Backup criado com sucesso!'"
+  },
+  "keywords": [
+    "face-recognition",
+    "react",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.2",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

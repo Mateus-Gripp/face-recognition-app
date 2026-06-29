@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+.env
+.DS_Store
+*.log
+uploads
+*.db
+*.db-journal
+*.bak
+.vscode
+.idea
+.claude

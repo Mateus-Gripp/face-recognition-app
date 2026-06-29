@@ -1,0 +1,447 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{listings}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black,
+    citecolor=blue!60!black
+}
+
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection.}{0.5em}{}
+
+\begin{document}
+
+\begin{titlepage}
+    \begin{center}
+        \includegraphics[width=0.22\textwidth]{ufsc_logo.png}
+        \vspace{1cm}
+
+        {\large \textbf{UNIVERSIDADE FEDERAL DE SANTA CATARINA}}\\
+        {\large Departamento de Engenharia El\'etrica e Eletr\^onica}\\
+        {\large Projeto N\'ivel I em Cont.\ e Proc.\ de Sinais I}
+
+        \vspace{3cm}
+
+        {\LARGE \textbf{Proposta de Projeto}}\\
+        \vspace{0.3cm}
+        {\large Sistema Web de Reconhecimento Facial com Prova de Vida}
+
+        \vspace{1cm}
+
+        {\Large \textbf{FaceID Lab}}
+
+        \vfill
+
+        \textbf{Acad\^emico:}\\
+        Mateus Gripp Pereira\\[0.4cm]
+        \textbf{Professor:} Joceli Mayer\\
+        \textbf{Disciplina:} EEL7815 -- Semestre 2026.1
+
+        \vfill
+
+        Florian\'opolis\\
+        Mar\c{c}o de 2026
+    \end{center}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ==========================================================================
+\section{T\'itulo e Equipe}
+
+\textbf{T\'itulo:} FaceID Lab -- Sistema Web de Cadastro e Identifica\c{c}\~ao Facial com Prova de Vida Baseado em Descritores Profundos.
+
+\subsection*{Equipe e Responsabilidades}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Mateus Gripp Pereira} (\textit{respons\'avel \'unico}): concep\c{c}\~ao,
+    arquitetura e implementa\c{c}\~ao integral do sistema, incluindo:
+    \begin{itemize}
+        \item \emph{Backend} Node.js + Express + Prisma/SQLite, com integra\c{c}\~ao
+        do \texttt{@vladmandic/face-api} (detec\c{c}\~ao, \emph{landmarks} e descritor
+        de 128-D) e API REST cobrindo cadastro com prova de vida, cadastro simples
+        (legado), identifica\c{c}\~ao, listagem e consulta individual;
+        \item \emph{Frontend} React + TypeScript + Vite, com captura via webcam
+        (\texttt{getUserMedia}) e telas de cadastro, identifica\c{c}\~ao e listagem;
+        \item Pipeline de \emph{prova de vida} ativa (an\'alise temporal de \emph{yaw},
+        EAR e consist\^encia de descritores entre \emph{frames});
+        \item Defesas de servidor: verifica\c{c}\~ao \emph{anti-adultera\c{c}\~ao}
+        (re-extra\c{c}\~ao do descritor no servidor e compara\c{c}\~ao com o reportado pelo
+        cliente) e \emph{detec\c{c}\~ao de cadastro duplicado} contra a base existente;
+        \item Suporte ao upload opcional de imagem de \emph{documento de identidade}
+        para auditoria;
+        \item Constru\c{c}\~ao da base de testes interna, calibra\c{c}\~ao do limiar de
+        decis\~ao e avalia\c{c}\~ao experimental (FAR/FRR);
+        \item Reda\c{c}\~ao do relat\'orio final e apresenta\c{c}\~ao.
+    \end{itemize}
+\end{itemize}
+
+% ==========================================================================
+\section{Introdu\c{c}\~ao}
+
+O reconhecimento facial \'e uma das aplica\c{c}\~oes mais difundidas de \emph{Processamento Digital
+de Imagens} (PDI) e \emph{Vis\~ao Computacional}, presente em controle de acesso, autentica\c{c}\~ao
+banc\'aria, registro de presen\c{c}a, atendimento personalizado e seguran\c{c}a p\'ublica. O problema
+combina v\'arias etapas cl\'assicas estudadas na disciplina: aquisi\c{c}\~ao e amostragem da imagem,
+filtragem e normaliza\c{c}\~ao, detec\c{c}\~ao de regi\~oes de interesse (faces), extra\c{c}\~ao de
+descritores de caracter\'isticas e classifica\c{c}\~ao por dist\^ancia em um espa\c{c}o de
+\emph{embeddings}.
+
+Apesar de o reconhecimento facial estar consolidado em produ\c{c}\~ao, dois desafios continuam
+relevantes para o aluno de engenharia: (i) entender o \emph{pipeline} completo,
+da c\^amera ao classificador, em vez de tratar o reconhecimento como uma ``caixa-preta''; e
+(ii) lidar com ataques de \emph{spoofing} (foto, v\'ideo, m\'ascara) usando t\'ecnicas de
+\emph{prova de vida} (\emph{liveness detection}). Sistemas comerciais costumam combinar
+v\'arias heur\'isticas geom\'etricas e modelos espec\'ificos para essa tarefa, e essa combina\c{c}\~ao
+\'e justamente o que torna o problema interessante do ponto de vista did\'atico.
+
+Este projeto prop\~oe a constru\c{c}\~ao de uma aplica\c{c}\~ao web completa, o \textbf{FaceID Lab},
+que implementa o ciclo completo: \emph{captura} pela webcam, \emph{detec\c{c}\~ao} de faces,
+\emph{extra\c{c}\~ao} de descritores de 128 dimens\~oes, \emph{verifica\c{c}\~ao}
+por dist\^ancia euclidiana contra um banco cadastrado e \emph{prova de vida} para mitigar
+ataques de \emph{spoofing}. A relev\^ancia social \'e direta: o mesmo n\'ucleo serve para
+controle de presen\c{c}a em aulas, identifica\c{c}\~ao de pacientes em cl\'inicas e cadastro
+facial em servi\c{c}os p\'ublicos -- todos casos em que aceitar uma foto impressa no lugar
+de uma pessoa real seria uma falha grave.
+
+% ==========================================================================
+\section{Objetivos}
+
+\subsection*{Objetivo Geral}
+
+Desenvolver, avaliar e documentar um sistema web de reconhecimento facial \emph{end-to-end},
+com cadastro guiado por prova de vida e identifica\c{c}\~ao por compara\c{c}\~ao de descritores
+profundos, aplicando os conceitos de PDI ministrados na disciplina.
+
+\subsection*{Objetivos Espec\'ificos}
+
+\begin{enumerate}[leftmargin=*]
+    \item Implementar a etapa de \textbf{aquisi\c{c}\~ao} via webcam no navegador, com
+    pr\'e-processamento (redimensionamento e normaliza\c{c}\~ao) compat\'ivel com os modelos
+    utilizados.
+
+    \item Aplicar \textbf{detec\c{c}\~ao de face} usando o \emph{SSD MobileNet V1} no \emph{backend}
+    e o \emph{Tiny Face Detector} no \emph{frontend}, comparando custo computacional e qualidade
+    de detec\c{c}\~ao.
+
+    \item Extrair \textbf{68 \emph{landmarks} faciais} e gerar o \textbf{descritor de 128 dimens\~oes}
+    (\emph{face embedding}) por face detectada.
+
+    \item Implementar a etapa de \textbf{decis\~ao por dist\^ancia} (dist\^ancia
+    euclidiana entre descritores) com limiar configur\'avel, alinhada ao conte\'udo
+    de m\'etodos de decis\~ao da disciplina.
+
+    \item Implementar \textbf{prova de vida ativa} baseada em heur\'isticas geom\'etricas
+    sobre os \emph{landmarks}: \emph{Eye Aspect Ratio} (EAR), \emph{yaw} estimado por
+    rela\c{c}\~ao nariz-mand\'ibula e an\'alise de consist\^encia temporal dos descritores
+    entre frames.
+
+    \item Implementar \textbf{verifica\c{c}\~ao anti-adultera\c{c}\~ao} no servidor:
+    todo descritor enviado pelo cliente \'e re-extra\'ido a partir da imagem original e
+    confrontado com o que o cliente reportou, impedindo que um atacante envie um
+    descritor manipulado sem refletir a face real.
+
+    \item Implementar \textbf{detec\c{c}\~ao de cadastros duplicados}: antes de gravar,
+    o novo descritor \'e comparado com todos os j\'a cadastrados; se a dist\^ancia
+    for inferior a um limiar tolerante, o cadastro \'e recusado.
+
+    \item Definir uma base de testes pr\'opria do autor (com consentimento)
+    para \textbf{avaliar} taxa de falsa aceita\c{c}\~ao (FAR), taxa de falsa rejei\c{c}\~ao
+    (FRR) e tempo m\'edio de identifica\c{c}\~ao, calibrando o limiar de decis\~ao.
+
+    \item Disponibilizar uma \textbf{interface web utiliz\'avel} (cadastro com
+    prova de vida, cadastro simples \emph{legado}, identifica\c{c}\~ao, listagem
+    de pessoas e consulta individual por ID) e suportar o upload opcional de
+    \textbf{imagem de documento} de identidade no cadastro, para \emph{auditoria
+    posterior}.
+
+    \item \textbf{Documentar} o pipeline completo no relat\'orio final.
+\end{enumerate}
+
+\subsection*{Resultados Esperados}
+
+\begin{itemize}[leftmargin=*]
+    \item Aplica\c{c}\~ao funcional rodando localmente (\emph{frontend} React + \emph{backend}
+    Node.js), com tempo de identifica\c{c}\~ao inferior a 1\,s em CPU de \emph{notebook}.
+    \item Taxa de acerto $\geq 95\%$ na base interna de testes para o limiar calibrado.
+    \item Rejei\c{c}\~ao consistente de ataques triviais de \emph{spoofing} (foto impressa,
+    foto em tela de celular est\'atica) atrav\'es da prova de vida.
+    \item Relat\'orio final descrevendo cada bloco do \emph{pipeline} com os fundamentos
+    te\'oricos correspondentes (\emph{e.g.} filtragem, normaliza\c{c}\~ao, classificador por
+    dist\^ancia, m\'etodos estat\'isticos).
+    \item Apresenta\c{c}\~ao com demonstra\c{c}\~ao ao vivo do cadastro com prova de vida
+    e da identifica\c{c}\~ao em tempo real.
+\end{itemize}
+
+% ==========================================================================
+\section{M\'etodos}
+
+\subsection{Estado da Arte e Refer\^encias}
+
+O reconhecimento facial moderno segue, em geral, tr\^es paradigmas:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Eigenfaces / Fisherfaces} (\emph{Turk \& Pentland}, 1991; \emph{Belhumeur et al.},
+    1997): proje\c{c}\~ao em subespa\c{c}o (PCA/LDA) das imagens da face. Simples, mas
+    sens\'ivel a varia\c{c}\~oes de pose e ilumina\c{c}\~ao.
+
+    \item \textbf{Descritores locais} (LBP, HOG): caracter\'isticas \emph{handcrafted} mais
+    robustas a varia\c{c}\~oes locais, combinadas com classificadores cl\'assicos.
+
+    \item \textbf{Descritores aprendidos por redes convolucionais profundas}:
+    \emph{FaceNet} (\emph{Schroff et al.}, 2015), \emph{ArcFace} (\emph{Deng et al.}, 2019)
+    e variantes, que treinam uma rede para mapear faces em um espa\c{c}o de
+    \emph{embeddings} onde dist\^ancia $\equiv$ ``mesma pessoa''. \'E hoje o
+    padr\~ao de fato.
+\end{enumerate}
+
+Para \emph{liveness detection} h\'a duas grandes linhas: (i) \emph{passive liveness}
+(an\'alise de textura, refl ex\~oes especulares, modelos como \emph{Silent Face
+Anti-Spoofing} da MiniVision); e (ii) \emph{active liveness} (pedir intera\c{c}\~oes
+como piscar, virar a cabe\c{c}a, sorrir, e validar pela varia\c{c}\~ao temporal).
+
+\subsection{Metodologia Adotada}
+
+Adotamos o paradigma de \textbf{descritores profundos} via biblioteca
+\texttt{face-api.js}/\texttt{@vladmandic/face-api}, que disp\~oe de redes pr\'e-treinadas
+em JavaScript/TypeScript, executando tanto no \emph{frontend} (WebGL) quanto no
+\emph{backend} (Node.js + \texttt{canvas}). Os modelos utilizados ser\~ao:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{SSD MobileNet V1} (\emph{backend}) e \textbf{Tiny Face Detector}
+    (\emph{frontend}) para detec\c{c}\~ao da face na imagem;
+
+    \item \textbf{Face Landmark 68-net} para a localiza\c{c}\~ao dos 68 pontos faciais
+    (olhos, sobrancelhas, nariz, boca, mand\'ibula);
+
+    \item \textbf{FaceNet-like Recognition Net} para gerar o descritor de 128 dimens\~oes.
+\end{itemize}
+
+A \textbf{classifica\c{c}\~ao} segue o m\'etodo de decis\~ao por dist\^ancia visto na disciplina:
+para cada pessoa cadastrada s\~ao armazenados \emph{m\'ultiplos} descritores
+$\{\mathbf{c}_{i,j}\}_j$ (um por \emph{frame} aceito na captura). Para uma consulta com
+descritor $\mathbf{q}$, calcula-se a dist\^ancia euclidiana
+\[
+    d_{i,j} = \| \mathbf{q} - \mathbf{c}_{i,j} \|_2 ,
+\]
+e identifica-se a pessoa $i^{*} = \arg\min_{i,j} d_{i,j}$ se $\min_{i,j} d_{i,j} < \tau$,
+onde $\tau$ \'e o limiar calibrado experimentalmente. O valor inicial adotado
+no arquivo de configura\c{c}\~ao do servidor \'e $\tau = 0{,}55$, e ser\'a refinado
+empiricamente durante a fase de avalia\c{c}\~ao.
+
+\subsection{Pipeline de Prova de Vida}
+
+O cadastro do usu\'ario \'e feito atrav\'es de um m\'odulo \texttt{LivenessCapture} que
+roda no navegador e coleta v\'arios \emph{frames} durante uma janela fixa de 5\,s.
+A detec\c{c}\~ao em tempo real usa o \emph{Tiny Face Detector} (\texttt{inputSize}\,$=$\,416,
+\texttt{scoreThreshold}\,$=$\,0,5), escolhido pelo baixo custo computacional adequado
+\`a execu\c{c}\~ao em WebGL no \emph{frontend}. Para cada \emph{frame} calculamos:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{EAR} (\emph{Eye Aspect Ratio}, Soukupov\'a \& \v{C}ech, 2016):
+    \[
+        \mathrm{EAR} = \frac{\|p_2 - p_6\| + \|p_3 - p_5\|}{2\, \|p_1 - p_4\|}
+    \]
+    aplicado aos \emph{landmarks} dos olhos, para detectar piscadas.
+
+    \item \textbf{Estimativa de \emph{yaw}} a partir da raz\~ao horizontal entre a posi\c{c}\~ao
+    do nariz e os extremos da mand\'ibula -- detecta rosto frontal vs.\ rota\c{c}\~ao
+    lateral.
+
+    \item \textbf{Consist\^encia dos descritores}: dist\^ancia m\'axima e m\'edia entre os
+    descritores dos frames coletados. Frames id\^enticos pixel-a-pixel ou rostos diferentes
+    s\~ao rejeitados.
+\end{itemize}
+
+S\~ao exigidos crit\'erios m\'inimos para aprovar a captura:
+$\geq 15$ \emph{frames} v\'alidos; fra\c{c}\~ao $\geq 60\%$ de \emph{frames} com face presente;
+faixa de \emph{yaw} compat\'ivel com micromovimento natural (entre $\sim$\,1,5\textdegree\ e
+$\sim$\,18\textdegree, n\~ao zero -- para descartar fotos est\'aticas -- mas n\~ao excessiva);
+dist\^ancia m\'axima inter-\emph{frame} dentro de \texttt{SAME\_PERSON\_MAX\_DIST}\,$=$\,0,5;
+e dist\^ancia \emph{m\'edia} acima de um piso m\'inimo ($>$\,0,005), o que rejeita capturas
+em que os frames s\~ao praticamente id\^enticos pixel-a-pixel (sintoma t\'ipico de
+foto retransmitida ou v\'ideo congelado). Tr\^es \emph{frames} representativos
+(in\'icio, meio e fim da janela) t\^em seus descritores persistidos para a
+classifica\c{c}\~ao multi-amostra, e o \emph{frame} inicial \'e mantido como imagem
+principal de refer\^encia da pessoa cadastrada.
+
+\subsection{Defesas Adicionais no Servidor}
+
+Al\'em das verifica\c{c}\~oes no cliente, o servidor implementa duas barreiras
+complementares no fluxo de cadastro com prova de vida:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Anti-adultera\c{c}\~ao cliente-servidor:} para cada \emph{frame} recebido,
+    o servidor re-extrai o descritor de 128-D a partir da imagem original e
+    compara com o descritor que o cliente reportou. Se a dist\^ancia
+    ultrapassar \texttt{MAX\_CLIENT\_SERVER\_DESCRIPTOR\_DIST}\,$=$\,0,45 o cadastro \'e
+    rejeitado, evitando que um cliente malicioso fa\c{c}a o \emph{bypass} da prova de
+    vida enviando descritores forjados.
+
+    \item \textbf{Detec\c{c}\~ao de cadastro duplicado:} antes de gravar, todos os
+    descritores rec\'em-extra\'idos s\~ao comparados com a base existente. Se a
+    menor dist\^ancia for inferior a \texttt{DUPLICATE\_THRESHOLD}\,$=$\,0,5 o sistema
+    reconhece a pessoa como j\'a cadastrada e rejeita o novo registro --
+    impedindo que o mesmo usu\'ario abra m\'ultiplas identidades.
+\end{itemize}
+
+Como \textbf{evolu\c{c}\~ao planejada}, est\'a previsto integrar o modelo
+\emph{Silent-Face-Anti-Spoofing} (MiniVision) convertido para ONNX e executado via
+\texttt{onnxruntime-web} -- o c\'odigo j\'a possui um \emph{stub} de integra\c{c}\~ao
+(\texttt{antispoof.ts}) preparado para receber esse classificador adicional.
+
+\subsection{Etapas de PDI Cobertas}
+
+A tabela a seguir relaciona cada bloco do projeto aos t\'opicos do conte\'udo program\'atico
+da disciplina:
+
+\begin{center}
+\begin{tabular}{lp{8.5cm}}
+\toprule
+\textbf{T\'opico do plano de ensino} & \textbf{Onde \'e exercitado no projeto} \\
+\midrule
+Aquisi\c{c}\~ao e amostragem & Captura via \texttt{getUserMedia}, escolha de resolu\c{c}\~ao 640$\times$480 \\
+Processamento pontual e filtragem & Normaliza\c{c}\~ao e redimensionamento antes do detector \\
+Segmenta\c{c}\~ao / detec\c{c}\~ao & SSD MobileNet e Tiny Face Detector localizam a face \\
+Detec\c{c}\~ao de bordas e descontinuidades & Base te\'orica para os 68 \emph{landmarks} \\
+Descritores de caracter\'isticas & \emph{Embedding} de 128-D (FaceNet-like) \\
+Reconhecimento por dist\^ancia & Classifica\c{c}\~ao 1-NN por dist\^ancia euclidiana sobre m\'ultiplos descritores por pessoa, com limiar configur\'avel \\
+M\'etodos estat\'isticos / supervis\~ao & An\'alise FAR/FRR; modelos pr\'e-treinados com aprendizagem supervisionada \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ==========================================================================
+\section{Materiais e Ferramentas}
+
+\subsection{Fontes de Imagens e Base de Dados}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Aquisi\c{c}\~ao em tempo real:} webcam do \emph{notebook} do autor.
+    Resolu\c{c}\~ao alvo de 640$\times$480, $\sim$30\,fps.
+
+    \item \textbf{Base de cadastros internos:} o autor e um pequeno grupo de
+    volunt\'arios identificados ser\~ao cadastrados (com consentimento expl\'icito).
+    Em cada cadastro, o m\'odulo de prova de vida coleta v\'arios \emph{frames}
+    durante uma janela de 5\,s com o rosto frontal e seleciona automaticamente
+    \textbf{3 \emph{frames} representativos} (in\'icio, meio e fim da janela), gerando
+    portanto \textbf{3 \emph{embeddings} por pessoa} -- todos da pose frontal, mas com
+    pequena varia\c{c}\~ao temporal de \emph{yaw} e ilumina\c{c}\~ao para refletir
+    a din\^amica natural do rosto.
+
+    \item \textbf{Base de testes de \emph{spoofing}:} ser\~ao usadas fotos impressas e fotos
+    exibidas em tela de celular do pr\'oprio autor para validar a prova de vida.
+
+    \item \textbf{Imagem de documento (opcional):} o cadastro suporta o envio adicional
+    de uma foto do documento de identidade do usu\'ario. Essa imagem n\~ao participa
+    do reconhecimento -- \'e apenas arquivada para auditoria humana posterior, simulando
+    o requisito comum em cen\'arios reais (controle de acesso institucional,
+    abertura de contas etc.).
+
+    \item \textbf{Base p\'ublica auxiliar:} \emph{Labeled Faces in the Wild} (LFW) ou subconjunto
+    do \emph{CelebA}, exclusivamente para refer\^encia comparativa de FAR/FRR, sem persistir
+    cadastros.
+\end{itemize}
+
+\subsection{Bibliotecas, \emph{Frameworks} e Recursos}
+
+\begin{center}
+\begin{tabular}{llp{6cm}}
+\toprule
+\textbf{Componente} & \textbf{Ferramenta} & \textbf{Estado} \\
+\midrule
+Reconhecimento facial & \texttt{@vladmandic/face-api} (FaceNet-like) & Instalado \\
+Detector pesado & SSD MobileNet V1 (backend) & Instalado \\
+Detector leve & Tiny Face Detector (frontend) & Instalado \\
+\emph{Landmarks} & Face Landmark 68-net & Instalado \\
+Anti-spoof passivo & Silent-Face-Anti-Spoofing $+$ \texttt{onnxruntime-web} & Em planejamento \\
+Frontend & React 18, TypeScript, Vite & Instalado \\
+Backend & Node.js, Express, TypeScript & Instalado \\
+Persist\^encia & Prisma ORM + SQLite & Instalado \\
+Manipula\c{c}\~ao de imagens (backend) & \texttt{canvas}, \texttt{multer} & Instalado \\
+Captura no navegador & \texttt{getUserMedia}, \texttt{<canvas>} & Instalado \\
+Empacotamento opcional & Docker, \texttt{docker-compose} & Configurado \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Hardware}
+
+Nenhum hardware espec\'ifico precisa ser adquirido. O \emph{notebook} do autor,
+com webcam integrada e CPU $\geq$ 4 \emph{cores}, \'e suficiente para a execu\c{c}\~ao em
+tempo real (n\~ao h\'a depend\^encia de GPU dedicada).
+
+\subsection{Licen\c{c}as e \'Etica}
+
+Todo o \emph{software} utilizado \'e livre (MIT/Apache) ou j\'a est\'a no acervo dispon\'ivel
+para discentes. O uso de imagens de faces respeita: (i) consentimento expl\'icito do autor e
+dos volunt\'arios envolvidos; (ii) restri\c{c}\~ao da base de cadastros ao autor e aos
+volunt\'arios identificados; (iii) op\c{c}\~ao de remo\c{c}\~ao a qualquer momento; e (iv)
+n\~ao publica\c{c}\~ao de imagens ou descritores em reposit\'orios p\'ublicos.
+
+% ==========================================================================
+\section{Cronograma}
+
+O cronograma a seguir foi alinhado ao calend\'ario oficial da disciplina EEL7815 em
+2026.1 (in\'icio em 12/03, encerramento em 09/07).
+
+\begin{center}
+\begin{tabular}{cllp{6.8cm}}
+\toprule
+\textbf{Semana} & \textbf{Per\'iodo} & \textbf{Etapa} & \textbf{Entreg\'aveis} \\
+\midrule
+1     & 12/03         & Setup           & Leitura do plano de ensino; revis\~ao bibliogr\'afica inicial; defini\c{c}\~ao do escopo. \\
+2--3  & 19/03--01/04  & Fundamenta\c{c}\~ao  & Estudo de detectores, \emph{landmarks} e \emph{embeddings}; instala\c{c}\~ao do ambiente; valida\c{c}\~ao do \emph{boilerplate} \texttt{face-api.js}. \\
+4--5  & 02/04--15/04  & Backend         & API REST (Express + Prisma), endpoint de cadastro e identifica\c{c}\~ao, persist\^encia do descritor. \\
+6--7  & 16/04--29/04  & Frontend b\'asico    & Telas de cadastro/identifica\c{c}\~ao em React, captura via webcam, integra\c{c}\~ao com a API. \\
+8--9  & 30/04--13/05  & Liveness ativo  & Implementa\c{c}\~ao do \texttt{LivenessCapture} (EAR, yaw, consist\^encia de descriptors). \\
+10--11 & 14/05--27/05 & Testes internos & Cadastro dos integrantes; medi\c{c}\~ao de FAR/FRR; calibra\c{c}\~ao de $\tau$. \\
+12    & 28/05--03/06  & Anti-spoof (opcional) & Integra\c{c}\~ao do modelo Silent-Face-Anti-Spoofing via ONNX, se cronograma permitir. \\
+13--14 & 04/06--17/06 & Avalia\c{c}\~ao final  & Bateria de testes de \emph{spoofing} (foto, tela), comparativos quantitativos. \\
+15    & 18/06--24/06  & Relat\'orio    & Reda\c{c}\~ao do relat\'orio final (20\% da nota). \\
+16    & 25/06         & Apresenta\c{c}\~ao    & Ensaio + apresenta\c{c}\~ao do projeto (80\% da nota). \\
+17    & 02/07--09/07  & Reserva       & Eventuais ajustes, atividades de recupera\c{c}\~ao/substitutivas. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textit{Observa\c{c}\~ao:} as datas de apresenta\c{c}\~ao formal ser\~ao confirmadas com o professor
+no decorrer do semestre, conforme o cronograma de aulas presenciais.
+
+% ==========================================================================
+\section*{Refer\^encias B\'asicas}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{[1]} R.\,C. Gonzalez, R.\,E. Woods. \emph{Digital Image Processing}.
+    Addison-Wesley Longman.
+
+    \item \textbf{[2]} F. Schroff, D. Kalenichenko, J. Philbin. \emph{FaceNet: A Unified
+    Embedding for Face Recognition and Clustering}. CVPR, 2015.
+
+    \item \textbf{[3]} T. Soukupov\'a, J. \v{C}ech. \emph{Real-Time Eye Blink Detection using
+    Facial Landmarks}. 21st Computer Vision Winter Workshop, 2016.
+
+    \item \textbf{[4]} J. Deng \emph{et al.} \emph{ArcFace: Additive Angular Margin Loss for
+    Deep Face Recognition}. CVPR, 2019.
+
+    \item \textbf{[5]} S\'itio complementar: \emph{Image Processing Place}.
+
+    \item \textbf{[6]} V. Mandic. \texttt{@vladmandic/face-api}. Documenta\c{c}\~ao oficial.
+\end{itemize}
+
+\end{document}
