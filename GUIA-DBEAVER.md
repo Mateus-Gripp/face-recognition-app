@@ -4,14 +4,14 @@
 
 ### Caminho do Banco:
 ```
-/home/mateus/Development/projects/faculdade/face-recognition-app/apps/api/dev.db
+apps/api/prisma/dev.db
 ```
 
 ### Passos para Conectar:
 1. Abra o DBeaver
 2. Clique em `Database` → `New Database Connection`
 3. Selecione **SQLite**
-4. Cole o caminho acima no campo **Path**
+4. Use o arquivo `apps/api/prisma/dev.db` no campo **Path**
 5. Clique em **Test Connection** (faça download dos drivers se pedido)
 6. Clique em **Finish**
 
@@ -234,7 +234,7 @@ FROM people;
 ### "No such table: people"
 Execute no terminal:
 ```bash
-cd /home/mateus/Development/projects/faculdade/face-recognition-app/apps/api
+cd apps/api
 pnpm exec prisma db push
 ```
 
@@ -250,7 +250,7 @@ pnpm exec prisma db push
 
 ✅ **SEMPRE faça backup antes de deletar:**
 ```bash
-cp apps/api/dev.db apps/api/dev.db.backup-$(date +%Y%m%d-%H%M%S)
+cp apps/api/prisma/dev.db apps/api/prisma/dev.db.backup-$(date +%Y%m%d-%H%M%S)
 ```
 
 ✅ **Use transações para operações críticas:**

@@ -2,14 +2,14 @@
 
 ## 📁 Localização do Banco
 ```
-/home/mateus/Development/projects/faculdade/face-recognition-app/apps/api/prisma/dev.db
+apps/api/prisma/dev.db
 ```
 
 ## 🚀 Início Rápido
 
 ### 1. Conectar no DBeaver
 - **Tipo:** SQLite
-- **Caminho:** `/home/mateus/Development/projects/faculdade/face-recognition-app/apps/api/prisma/dev.db`
+- **Caminho:** `apps/api/prisma/dev.db`
 
 ### 2. Query Principal
 ```sql
