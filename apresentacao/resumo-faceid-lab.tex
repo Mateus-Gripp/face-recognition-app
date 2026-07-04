@@ -1,0 +1,67 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\usepackage[top=1.55cm,bottom=1.55cm,left=1.55cm,right=1.55cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{listings}
+\usepackage{multicol}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black,
+    citecolor=blue!60!black
+}
+
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{0.28em}{0.12em}
+
+\setlength{\columnsep}{0.7cm}
+\setlength{\parskip}{0.18em}
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{center}
+    {\large \textbf{FaceID Lab: Sistema Web de Reconhecimento Facial com Prova de Vida}}\\[0.12cm]
+    Mateus Gripp Pereira\\
+    Universidade Federal de Santa Catarina -- EEL7815
+\end{center}
+
+\vspace{0.08cm}
+
+\noindent\textbf{Resumo:}
+Este trabalho apresenta o FaceID Lab, um sistema web para cadastro e identifica\c{c}\~ao facial com prova de vida, desenvolvido com React, Node.js, Prisma, SQLite e \texttt{@vladmandic/face-api}. O projeto implementa um fluxo completo de aquisi\c{c}\~ao por webcam, detec\c{c}\~ao facial, extra\c{c}\~ao de descritores profundos de 128 dimens\~oes e compara\c{c}\~ao com a base cadastrada. Como mecanismo de seguran\c{c}a, foi adotada prova de vida ativa baseada em movimento lateral da cabe\c{c}a, al\'em de verifica\c{c}\~ao de consist\^encia de descritores no servidor e bloqueio de cadastros duplicados. Os resultados mostram um sistema funcional, com interface utiliz\'avel, cadastro protegido por liveness e identifica\c{c}\~ao acompanhada de compara\c{c}\~ao visual entre a imagem capturada e a imagem armazenada.
+
+\noindent\textbf{Palavras-chave:}
+reconhecimento facial; prova de vida; vis\~ao computacional; aplica\c{c}\~ao web; processamento digital de imagens.
+
+\vspace{0.12cm}
+
+\begin{multicols}{2}
+
+\section{Introdu\c{c}\~ao}
+O reconhecimento facial \'e uma aplica\c{c}\~ao relevante de vis\~ao computacional, com uso em controle de acesso, autentica\c{c}\~ao e registro de presen\c{c}a. Entretanto, sistemas baseados apenas em imagem est\'atica ficam vulner\'aveis a ataques simples, como fotos em tela ou impressas. Neste contexto, o projeto FaceID Lab foi desenvolvido para demonstrar um pipeline completo de reconhecimento facial aliado a mecanismos de prova de vida e valida\c{c}\~ao de consist\^encia.
+
+\section{Metodologia}
+O sistema foi dividido em frontend e backend. No frontend, desenvolvido em React com TypeScript, a webcam \'e acessada via navegador para captura dos frames. O backend, implementado em Node.js com Express e Prisma, processa os dados e persiste as informa\c{c}\~oes em SQLite. A extra\c{c}\~ao de caracter\'isticas faciais utiliza \texttt{@vladmandic/face-api}, gerando descritores de 128 dimens\~oes comparados por dist\^ancia euclidiana.
+
+Para a prova de vida, foi implementado um desafio ativo de movimento lateral da cabe\c{c}a, com valida\c{c}\~ao de rota\c{c}\~ao para esquerda e direita ao longo de m\'ultiplos frames. A captura passou a utilizar recorte focado na regi\~ao da face detectada, reduzindo o fundo armazenado e melhorando a consist\^encia visual do cadastro. No servidor, os descritores enviados pelo cliente s\~ao reextra\'idos e comparados com os descritores calculados localmente, reduzindo o risco de adultera\c{c}\~ao do payload.
+
+\section{Resultados}
+O sistema resultante permite: cadastro de pessoas com imagem facial e documento opcional; identifica\c{c}\~ao facial com prova de vida antes do reconhecimento; bloqueio de cadastros duplicados; e exibi\c{c}\~ao comparativa entre foto capturada e foto cadastrada. Durante a evolu\c{c}\~ao do projeto, foram refinadas a experi\^encia de captura, as mensagens de erro e a valida\c{c}\~ao do enquadramento do rosto. A identifica\c{c}\~ao tamb\'em passou a exigir valida\c{c}\~ao pr\'evia de liveness, aumentando a ader\^encia do sistema a cen\'arios mais sens\'iveis.
+
+\section{Conclus\~ao}
+O FaceID Lab demonstrou a viabilidade de integrar reconhecimento facial e prova de vida em uma aplica\c{c}\~ao web completa, cobrindo desde a captura at\'e a decis\~ao final. O projeto atingiu o objetivo de materializar, em um sistema funcional, conceitos de processamento digital de imagens, detec\c{c}\~ao facial, extra\c{c}\~ao de descritores e valida\c{c}\~ao de seguran\c{c}a. Como trabalhos futuros, destacam-se a medi\c{c}\~ao formal de FAR/FRR, a integra\c{c}\~ao de um modelo dedicado de anti-spoofing e o refinamento da sequ\^encia de prova de vida.
+
+\end{multicols}
+\end{document}

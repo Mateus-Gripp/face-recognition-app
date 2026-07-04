@@ -1,0 +1,120 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+
+\definecolor{primary}{RGB}{63,81,181}
+\definecolor{accent}{RGB}{0,150,136}
+
+\setbeamercolor{title}{fg=primary}
+\setbeamercolor{frametitle}{fg=primary}
+\setbeamercolor{structure}{fg=primary}
+
+\title{FaceID Lab}
+\subtitle{Sistema Web de Reconhecimento Facial com Prova de Vida}
+\author{Mateus Gripp Pereira}
+\institute{UFSC -- EEL7815}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Problema e Objetivo}
+  \begin{itemize}
+    \item Construir um sistema web de cadastro e identifica\c{c}\~ao facial com foco did\'atico e aplica\c{c}\~ao pr\'atica.
+    \item Integrar captura por webcam, detec\c{c}\~ao facial, extra\c{c}\~ao de descritores e compara\c{c}\~ao contra base local.
+    \item Reduzir fraudes simples com prova de vida ativa e bloqueio de cadastros duplicados.
+  \end{itemize}
+
+  \vspace{0.6cm}
+  \textbf{Meta principal:} entregar um fluxo completo de \textit{cadastro + identifica\c{c}\~ao} com interface utiliz\'avel e valida\c{c}\~oes de seguran\c{c}a no cliente e no servidor.
+\end{frame}
+
+\begin{frame}{Arquitetura do Sistema}
+  \begin{itemize}
+    \item \textbf{Frontend:} React + TypeScript + Vite
+    \item \textbf{Backend:} Node.js + Express + Prisma
+    \item \textbf{Banco:} SQLite
+    \item \textbf{Reconhecimento facial:} \texttt{@vladmandic/face-api}
+  \end{itemize}
+
+  \vspace{0.4cm}
+  \begin{block}{Fluxo}
+    Webcam $\rightarrow$ detec\c{c}\~ao facial $\rightarrow$ landmarks e descritor 128-D $\rightarrow$
+    valida\c{c}\~ao de prova de vida $\rightarrow$ compara\c{c}\~ao com base cadastrada.
+  \end{block}
+\end{frame}
+
+\begin{frame}{Funcionalidades Implementadas}
+  \begin{itemize}
+    \item Cadastro de pessoas com nome, identificador e documento opcional.
+    \item Identifica\c{c}\~ao facial com prova de vida antes do reconhecimento.
+    \item Recorte focado no rosto para melhorar a qualidade visual das imagens salvas.
+    \item Compara\c{c}\~ao visual entre foto capturada e foto cadastrada no resultado.
+    \item Mensagens de erro mais claras para duplicidade e falhas de captura.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Camadas de Seguran\c{c}a}
+  \begin{itemize}
+    \item \textbf{Prova de vida ativa:} desafio de virar a cabe\c{c}a para esquerda e direita.
+    \item \textbf{Valida\c{c}\~ao temporal:} an\'alise de m\'ultiplos frames durante a captura.
+    \item \textbf{Anti-adultera\c{c}\~ao no servidor:} reextra\c{c}\~ao do descritor facial para conferir consist\^encia com o cliente.
+    \item \textbf{Detec\c{c}\~ao de duplicidade:} bloqueio de novo cadastro quando o rosto j\'a existe na base.
+  \end{itemize}
+
+  \vspace{0.3cm}
+  \textbf{Observa\c{c}\~ao:} a prova de vida atual reduz ataques triviais, mas um modelo espec\'ifico de anti-spoofing ainda \'e uma melhoria futura relevante.
+\end{frame}
+
+\begin{frame}{Resultados Obtidos}
+  \begin{itemize}
+    \item Sistema completo funcionando localmente e acess\'ivel por navegador e link tempor\'ario.
+    \item Cadastro com prova de vida e recorte facial mais consistente.
+    \item Identifica\c{c}\~ao com valida\c{c}\~ao pr\'evia de liveness.
+    \item Bloqueio de cadastros repetidos com feedback amig\'avel ao usu\'ario.
+    \item Interface preparada para demonstra\c{c}\~ao com indicadores visuais de enquadramento e progresso.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Roteiro da Demonstra\c{c}\~ao em V\'ideo}
+  \begin{enumerate}
+    \item Apresentar rapidamente o objetivo do projeto e a arquitetura.
+    \item Mostrar o fluxo de cadastro com prova de vida:
+    \begin{itemize}
+      \item enquadramento do rosto
+      \item movimento lateral da cabe\c{c}a
+      \item conclus\~ao do cadastro
+    \end{itemize}
+    \item Mostrar tentativa de cadastro duplicado e o bloqueio do sistema.
+    \item Mostrar identifica\c{c}\~ao com prova de vida.
+    \item Exibir o resultado com foto capturada versus foto cadastrada.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Limita\c{c}\~oes e Pr\'oximos Passos}
+  \begin{itemize}
+    \item Ajustar e medir formalmente FAR, FRR e tempo de resposta.
+    \item Integrar modelo real de anti-spoofing passivo.
+    \item Refinar a sequ\^encia de prova de vida com desafios ordenados.
+    \item Evoluir para banco mais robusto e camadas extras de auditoria.
+  \end{itemize}
+
+  \vspace{0.5cm}
+  \centering
+  \Large Obrigado.
+\end{frame}
+
+\end{document}

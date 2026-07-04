@@ -11,3 +11,11 @@ uploads
 .vscode
 .idea
 .claude
+*.aux
+*.out
+*.toc
+*.nav
+*.snm
+*.fls
+*.fdb_latexmk
+*.synctex.gz

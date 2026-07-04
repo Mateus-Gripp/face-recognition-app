@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaceID Lab - Apresentação</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #0e1a2b;
+      --panel-2: #13233a;
+      --text: #f4f7fb;
+      --muted: #b6c2d2;
+      --primary: #5b7cfa;
+      --accent: #1fc7a4;
+      --danger: #ff6b6b;
+      --border: rgba(255, 255, 255, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background:
+        radial-gradient(circle at top left, rgba(91, 124, 250, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(31, 199, 164, 0.14), transparent 22%),
+        linear-gradient(160deg, #07111f 0%, #0a1424 55%, #0c1830 100%);
+      color: var(--text);
+      font-family: "Segoe UI", "Aptos", "Helvetica Neue", Arial, sans-serif;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      padding: 4.5rem 5.5rem 5rem;
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.4rem;
+    }
+
+    .kicker {
+      color: var(--accent);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1, h2 {
+      margin: 0;
+      line-height: 1.06;
+    }
+
+    h1 {
+      font-size: clamp(2.8rem, 5vw, 4.8rem);
+      max-width: 12ch;
+    }
+
+    h2 {
+      font-size: clamp(2rem, 3vw, 3rem);
+      color: #ffffff;
+    }
+
+    p, li {
+      font-size: clamp(1rem, 1.25vw, 1.38rem);
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    ul, ol {
+      margin: 0;
+      padding-left: 1.3rem;
+      max-width: 58rem;
+    }
+
+    li + li {
+      margin-top: 0.6rem;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .hero-card,
+    .panel {
+      background: linear-gradient(180deg, rgba(19, 35, 58, 0.92), rgba(14, 26, 43, 0.95));
+      border: 1px solid var(--border);
+      border-radius: 1.4rem;
+      padding: 1.4rem 1.5rem;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+    }
+
+    .metric {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+      padding: 1rem;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.3rem;
+      color: white;
+      margin-bottom: 0.2rem;
+    }
+
+    .metric-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.2rem;
+      height: 2.2rem;
+      margin-bottom: 0.55rem;
+      border-radius: 0.7rem;
+      background: rgba(91, 124, 250, 0.18);
+      font-size: 1.2rem;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-top: 0.6rem;
+    }
+
+    .pill {
+      padding: 0.9rem 1rem;
+      border-radius: 999px;
+      background: rgba(91, 124, 250, 0.14);
+      border: 1px solid rgba(91, 124, 250, 0.3);
+      color: #e9eeff;
+      font-weight: 600;
+      font-size: 0.96rem;
+    }
+
+    .highlight {
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      padding: 1rem 1.2rem;
+      background: rgba(31, 199, 164, 0.08);
+      border-radius: 0 1rem 1rem 0;
+      max-width: 56rem;
+    }
+
+    .mini-intro {
+      max-width: 52rem;
+      padding: 1rem 1.2rem;
+      border-radius: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .diagram {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: stretch;
+      margin-top: 1.2rem;
+    }
+
+    .diagram-card {
+      position: relative;
+      padding: 1.2rem 1rem;
+      border-radius: 1.2rem;
+      background: linear-gradient(180deg, rgba(20, 37, 62, 0.92), rgba(12, 24, 42, 0.96));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+    }
+
+    .diagram-card::after {
+      content: "→";
+      position: absolute;
+      right: -0.8rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.6rem;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .diagram-card:last-child::after {
+      display: none;
+    }
+
+    .diagram-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.7rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .diagram-icon {
+      width: 2.3rem;
+      height: 2.3rem;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 0.8rem;
+      background: rgba(31, 199, 164, 0.16);
+      border: 1px solid rgba(31, 199, 164, 0.24);
+      font-size: 1.15rem;
+    }
+
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      align-items: center;
+    }
+
+    .pipeline-node {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 3rem;
+      padding: 0.7rem 1rem;
+      border-radius: 1rem;
+      background: rgba(91, 124, 250, 0.14);
+      border: 1px solid rgba(91, 124, 250, 0.28);
+      color: #eef2ff;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .pipeline-arrow {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .note-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .note-card {
+      padding: 1.1rem 1.15rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .note-card.good {
+      border-color: rgba(31, 199, 164, 0.32);
+      background: rgba(31, 199, 164, 0.09);
+    }
+
+    .note-card.next {
+      border-color: rgba(91, 124, 250, 0.32);
+      background: rgba(91, 124, 250, 0.09);
+    }
+
+    .note-card h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.06rem;
+    }
+
+    .note-card ul {
+      padding-left: 1.15rem;
+      margin-top: 0.35rem;
+    }
+
+    .note-card li {
+      font-size: 0.98rem;
+      line-height: 1.42;
+    }
+
+    .timeline-step {
+      display: grid;
+      grid-template-columns: 3.2rem 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .step-n {
+      width: 3.2rem;
+      height: 3.2rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .footer {
+      position: absolute;
+      left: 5.5rem;
+      right: 5.5rem;
+      bottom: 1.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.92rem;
+    }
+
+    .progress {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width 180ms ease;
+    }
+
+    .hint {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.98rem;
+    }
+
+    @page {
+      size: 13.333in 7.5in;
+      margin: 0;
+    }
+
+    @media print {
+      html, body {
+        overflow: visible;
+        background: #07111f;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .deck {
+        height: auto;
+      }
+
+      .slide {
+        position: relative;
+        inset: auto;
+        display: flex !important;
+        flex-direction: column;
+        justify-content: center;
+        gap: 1.4rem;
+        min-height: 7.5in;
+        padding: 0.65in 0.8in;
+        break-after: page;
+        page-break-after: always;
+      }
+
+      .slide:last-of-type {
+        break-after: auto;
+        page-break-after: auto;
+      }
+
+      .footer,
+      .progress {
+        display: none !important;
+      }
+    }
+
+    body.print-mode {
+      overflow: visible;
+      background: #07111f;
+    }
+
+    body.print-mode .deck {
+      height: auto;
+    }
+
+    body.print-mode .slide {
+      position: relative;
+      inset: auto;
+      display: flex !important;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.4rem;
+      min-height: 100vh;
+      padding: 4rem 4.5rem;
+      break-after: page;
+      page-break-after: always;
+    }
+
+    body.print-mode .slide:last-of-type {
+      break-after: auto;
+      page-break-after: auto;
+    }
+
+    body.print-mode .footer,
+    body.print-mode .progress {
+      display: none !important;
+    }
+
+    @media (max-width: 980px) {
+      .slide {
+        padding: 2.4rem 1.4rem 4rem;
+      }
+
+      .hero,
+      .two-col,
+      .diagram,
+      .note-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .diagram-card::after {
+        display: none;
+      }
+
+      .footer {
+        left: 1.4rem;
+        right: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" id="deck">
+    <section class="slide active">
+      <div class="hero">
+        <div>
+          <div class="kicker">UFSC • EEL7815 • 2026</div>
+          <h1>FaceID Lab</h1>
+          <p class="highlight">Sistema Web de Reconhecimento Facial com Prova de Vida</p>
+          <p>
+            Projeto full-stack construído para transformar conceitos de
+            <span class="highlight">visão computacional e processamento de imagens</span>
+            em um sistema web funcional de cadastro e identificação facial.
+          </p>
+          <p class="hint">Foco da apresentação: o que foi prometido, o que foi entregue e como a visão computacional aparece no sistema</p>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-grid">
+            <div class="metric">
+              <span class="metric-icon">🖥️</span>
+              <strong>Frontend</strong>
+              <span>React + TypeScript + Vite</span>
+            </div>
+            <div class="metric">
+              <span class="metric-icon">⚙️</span>
+              <strong>Backend</strong>
+              <span>Node.js + Express + Prisma</span>
+            </div>
+            <div class="metric">
+              <span class="metric-icon">🗄️</span>
+              <strong>Base</strong>
+              <span>SQLite</span>
+            </div>
+            <div class="metric">
+              <span class="metric-icon">🧠</span>
+              <strong>IA Facial</strong>
+              <span>@vladmandic/face-api</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">1. Ideia do projeto</div>
+      <h2>O que eu quis construir com o FaceID Lab</h2>
+      <div class="mini-intro">
+        <p>
+          Criar um <span class="highlight">sistema web prático</span> que usa prova de vida e visão computacional
+          para cadastro e identificação facial.
+        </p>
+      </div>
+      <div class="two-col">
+        <div class="panel">
+          <p class="highlight">Objetivo</p>
+          <ul>
+            <li>criar um sistema web de cadastro e identificação facial com aplicação prática</li>
+            <li>usar prova de vida para reduzir fraudes simples, como foto estática e cadastro duplicado</li>
+            <li>aplicar, de forma visível, conceitos estudados em PDI e visão computacional</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <p class="highlight">Fluxo central</p>
+          <p>
+            A proposta foi transformar conceitos de PDI em uma aplicação capaz de
+            <span class="highlight">capturar, analisar e reconhecer rostos</span>,
+            com interface utilizável e uma camada básica de segurança.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">2. Como o sistema funciona</div>
+      <h2>Como eu organizei a aplicação</h2>
+      <div class="mini-intro">
+        <p>
+          A parte mais importante do fluxo é esta:
+          <span class="highlight">a webcam captura, o frontend envia a imagem para a API e a API decide o que fazer com aquele rosto</span>.
+        </p>
+      </div>
+      <div class="diagram">
+        <div class="diagram-card">
+          <div class="diagram-title">
+            <span class="diagram-icon">🖥️</span>
+            <span>Frontend</span>
+          </div>
+          <ul>
+            <li>captura por webcam</li>
+            <li>páginas de cadastro e identificação</li>
+            <li>feedback visual para o usuário</li>
+          </ul>
+        </div>
+        <div class="diagram-card">
+          <div class="diagram-title">
+            <span class="diagram-icon">⚙️</span>
+            <span>Backend</span>
+          </div>
+          <ul>
+            <li>API REST</li>
+            <li>validação dos dados</li>
+            <li>comparação e regras de segurança</li>
+          </ul>
+        </div>
+        <div class="diagram-card">
+          <div class="diagram-title">
+            <span class="diagram-icon">🗄️</span>
+            <span>Base de dados</span>
+          </div>
+          <ul>
+            <li>pessoas cadastradas</li>
+            <li>descritores faciais</li>
+            <li>imagens e metadados</li>
+          </ul>
+        </div>
+      </div>
+      <div class="pipeline">
+        <span class="pipeline-node">Webcam</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-node">Envio para a API</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-node">Detecção e recorte do rosto</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-node">Descritor facial</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-node">Validação e comparação</span>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">3. Processamento na API</div>
+      <h2>O que acontece quando a imagem chega no servidor</h2>
+      <div class="two-col">
+        <div class="panel">
+          <p class="highlight">Leitura simples do processamento</p>
+          <div class="timeline-step">
+            <div class="step-n">1</div>
+            <div>
+              <p>A API recebe a foto capturada e confere se há um rosto utilizável na imagem.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="step-n">2</div>
+            <div>
+              <p>Depois disso, o sistema isola a região do rosto para trabalhar menos com o fundo e mais com a face.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="step-n">3</div>
+            <div>
+              <p>Com esse rosto, a biblioteca gera um resumo numérico da face, que funciona como uma assinatura facial.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="step-n">4</div>
+            <div>
+              <p>Por fim, a API compara essa assinatura com a base e decide se cadastra, bloqueia duplicidade ou identifica alguém.</p>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <p class="highlight">Onde entram os conceitos da disciplina</p>
+          <ul>
+            <li>a imagem da webcam é a etapa de aquisição</li>
+            <li>a face detectada vira a região de interesse</li>
+            <li>o descritor representa a extração de características</li>
+            <li>a distância entre descritores guia a decisão final</li>
+            <li>a API transforma esses passos em uma resposta prática para o sistema</li>
+          </ul>
+          <div class="callout">
+            <p>
+              Em termos simples, a API não "entende" a foto como uma pessoa:
+              ela <span class="highlight">transforma a imagem em características comparáveis</span> e usa isso para tomar a decisão.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">4. Entregas do projeto</div>
+      <h2>O que o sistema já faz hoje</h2>
+      <div class="two-col">
+        <div class="panel">
+          <p class="highlight">Cadastro</p>
+          <ul>
+            <li>nome, matrícula e documento opcional</li>
+            <li>captura guiada por webcam</li>
+            <li>bloqueio de duplicidade facial</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <p class="highlight">Identificação</p>
+          <ul>
+            <li>prova de vida antes do reconhecimento</li>
+            <li>comparação visual entre captura e base</li>
+            <li>feedback visual e mensagens mais amigáveis</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="kicker">5. Fechamento</div>
+      <h2>Resultado final e próximos desdobramentos</h2>
+      <div class="note-grid">
+        <div class="note-card good">
+          <h3>Resultado do projeto</h3>
+          <ul>
+            <li>sistema funcional de cadastro e identificação facial</li>
+            <li>feedback visual mais claro para o usuário</li>
+            <li>integração prática entre visão computacional, API e aplicação web</li>
+          </ul>
+        </div>
+        <div class="note-card next">
+          <h3>Próximos desdobramentos</h3>
+          <ul>
+            <li>expandir a validação com uma base maior e cenários mais variados</li>
+            <li>evoluir a camada de segurança para contextos de uso mais exigentes</li>
+            <li>continuar refinando a experiência de captura e identificação</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      <span>FaceID Lab • Mateus Gripp Pereira</span>
+      <span id="counter">1 / 5</span>
+    </div>
+    <div class="progress" id="progress"></div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('print') === '1') {
+      document.body.classList.add('print-mode');
+    }
+
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counter = document.getElementById('counter');
+    const progress = document.getElementById('progress');
+    const startSlide = Number(params.get('slide'));
+    let index = Number.isInteger(startSlide) && startSlide >= 1 && startSlide <= slides.length
+      ? startSlide - 1
+      : 0;
+
+    function render() {
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+      counter.textContent = `${index + 1} / ${slides.length}`;
+      progress.style.width = `${((index + 1) / slides.length) * 100}%`;
+      document.title = `FaceID Lab - Slide ${index + 1}`;
+    }
+
+    function next() {
+      if (index < slides.length - 1) {
+        index += 1;
+        render();
+      }
+    }
+
+    function prev() {
+      if (index > 0) {
+        index -= 1;
+        render();
+      }
+    }
+
+    window.addEventListener('keydown', (event) => {
+      if (['ArrowRight', 'PageDown', ' '].includes(event.key)) {
+        event.preventDefault();
+        next();
+      }
+      if (['ArrowLeft', 'PageUp'].includes(event.key)) {
+        event.preventDefault();
+        prev();
+      }
+      if (event.key === 'Home') {
+        index = 0;
+        render();
+      }
+      if (event.key === 'End') {
+        index = slides.length - 1;
+        render();
+      }
+    });
+
+    window.addEventListener('click', next);
+    render();
+  </script>
+</body>
+</html>
